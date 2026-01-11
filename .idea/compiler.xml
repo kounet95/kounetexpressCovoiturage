@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="ride-service" />
+        <module name="payment-service" />
+        <module name="common" />
+        <module name="booking-service" />
+        <module name="ai-agent-service" />
+        <module name="user-service" />
+        <module name="messaging-gateway" />
+        <module name="document-service" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="modulePrincipale" target="21" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="ai-agent-service" options="-parameters" />
+      <module name="booking-service" options="-parameters" />
+      <module name="common" options="-parameters" />
+      <module name="common.main" options="-parameters" />
+      <module name="common.test" options="-parameters" />
+      <module name="document-service" options="-parameters" />
+      <module name="intelligent-rideshare" options="" />
+      <module name="messaging-gateway" options="-parameters" />
+      <module name="modulePrincipale" options="-parameters" />
+      <module name="payment-service" options="-parameters" />
+      <module name="ride-service" options="-parameters" />
+      <module name="user-service" options="-parameters" />
+    </option>
+  </component>
+</project>
