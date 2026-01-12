@@ -1,0 +1,28 @@
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: r1
+          uri: lb://ECPOLY-COMMAND
+          predicates:
+            - Path=/command/**
+        - id: r2
+          uri: lb://ECPOLY-QUERY
+          predicates:
+            - Path=/query/**
+        - id: r3
+          uri: lb://BLOG-SERVICE
+          predicates:
+            - Path=/blog/**
+        - id: r4
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/notification/**
+  application:
+    name: gateway-service
+server:
+  port: 8888

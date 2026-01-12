@@ -1,14 +1,14 @@
-# Multi-stage build for messaging-gateway
+# Multi-stage build for booking-service
 FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /workspace
 COPY . .
-RUN mvn -q -DskipTests -pl messaging-gateway -am package
+RUN mvn -q -DskipTests -pl booking-service -am package
 
 FROM eclipse-temurin:21-jre
 ENV TZ=UTC
 WORKDIR /app
-COPY --from=builder /workspace/messaging-gateway/target/*.jar /app/app.jar
-EXPOSE 8082
+COPY --from=builder /workspace/booking-service/target/*.jar /app/app.jar
+EXPOSE 8084
 ENV JAVA_OPTS=""
 ENV SPRING_PROFILES_ACTIVE=docker
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]

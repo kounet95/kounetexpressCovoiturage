@@ -1,0 +1,323 @@
+version: "3.9"
+
+name: intelligent-rideshare
+
+services:
+  # ---- Infrastructure ----
+  eureka:
+    build:
+      context: ./discoveryservice
+    image: bitnami/eureka:2
+    container_name: eureka
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_SERVER_ENABLE_SELF_PRESERVATION=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rideshare-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    networks:
+      - rideshare-net
+
+  # One Postgres per service for simplicity in local dev
+  postgres_ai:
+    image: postgres:16-alpine
+    container_name: postgres_ai
+    environment:
+      - POSTGRES_DB=${AI_DB_NAME}
+      - POSTGRES_USER=${AI_DB_USER}
+      - POSTGRES_PASSWORD=${AI_DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_ai:/var/lib/postgresql/data
+    networks:
+      - rideshare-net
+
+  postgres_ride:
+    image: postgres:16-alpine
+    container_name: postgres_ride
+    environment:
+      - POSTGRES_DB=${RIDE_DB_NAME}
+      - POSTGRES_USER=${RIDE_DB_USER}
+      - POSTGRES_PASSWORD=${RIDE_DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_ride:/var/lib/postgresql/data
+    networks:
+      - rideshare-net
+
+  postgres_booking:
+    image: postgres:16-alpine
+    container_name: postgres_booking
+    environment:
+      - POSTGRES_DB=${BOOKING_DB_NAME}
+      - POSTGRES_USER=${BOOKING_DB_USER}
+      - POSTGRES_PASSWORD=${BOOKING_DB_PASSWORD}
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata_booking:/var/lib/postgresql/data
+    networks:
+      - rideshare-net
+
+  postgres_payment:
+    image: postgres:16-alpine
+    container_name: postgres_payment
+    environment:
+      - POSTGRES_DB=${PAYMENT_DB_NAME}
+      - POSTGRES_USER=${PAYMENT_DB_USER}
+      - POSTGRES_PASSWORD=${PAYMENT_DB_PASSWORD}
+    ports:
+      - "5436:5432"
+    volumes:
+      - pgdata_payment:/var/lib/postgresql/data
+    networks:
+      - rideshare-net
+
+  postgres_user:
+    image: postgres:16-alpine
+    container_name: postgres_user
+    environment:
+      - POSTGRES_DB=${USER_DB_NAME}
+      - POSTGRES_USER=${USER_DB_USER}
+      - POSTGRES_PASSWORD=${USER_DB_PASSWORD}
+    ports:
+      - "5437:5432"
+    volumes:
+      - pgdata_user:/var/lib/postgresql/data
+    networks:
+      - rideshare-net
+
+  postgres_document:
+    image: postgres:16-alpine
+    container_name: postgres_document
+    environment:
+      - POSTGRES_DB=${DOCUMENT_DB_NAME}
+      - POSTGRES_USER=${DOCUMENT_DB_USER}
+      - POSTGRES_PASSWORD=${DOCUMENT_DB_PASSWORD}
+    ports:
+      - "5438:5432"
+    volumes:
+      - pgdata_document:/var/lib/postgresql/data
+    networks:
+      - rideshare-net
+
+  # ---- Application services ----
+  ai-agent-service:
+    build:
+      context: .
+      dockerfile: ai-agent-service/Dockerfile
+    image: covoiturage/ai-agent-service:local
+    container_name: ai-agent-service
+    depends_on:
+      - eureka
+      - postgres_ai
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_ai:5432/${AI_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${AI_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${AI_DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8081
+    ports:
+      - "8081:8081"
+    networks:
+      - rideshare-net
+
+  messaging-gateway:
+    build:
+      context: .
+      dockerfile: messaging-gateway/Dockerfile
+    image: covoiturage/messaging-gateway:local
+    container_name: messaging-gateway
+    depends_on:
+      - ai-agent-service
+      - redis
+      - eureka
+    environment:
+      - SERVICES_AI_AGENT_URL=http://ai-agent-service:8081
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8082
+    ports:
+      - "8082:8082"
+    networks:
+      - rideshare-net
+
+  ride-service:
+    build:
+      context: .
+      dockerfile: ride-service/Dockerfile
+    image: covoiturage/ride-service:local
+    container_name: ride-service
+    depends_on:
+      - postgres_ride
+      - eureka
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_ride:5432/${RIDE_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${RIDE_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${RIDE_DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8083
+    ports:
+      - "8083:8083"
+    networks:
+      - rideshare-net
+
+  booking-service:
+    build:
+      context: .
+      dockerfile: booking-service/Dockerfile
+    image: covoiturage/booking-service:local
+    container_name: booking-service
+    depends_on:
+      - postgres_booking
+      - ride-service
+      - eureka
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_booking:5432/${BOOKING_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${BOOKING_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${BOOKING_DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8084
+    ports:
+      - "8084:8084"
+    networks:
+      - rideshare-net
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    image: covoiturage/payment-service:local
+    container_name: payment-service
+    depends_on:
+      - postgres_payment
+      - eureka
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_payment:5432/${PAYMENT_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${PAYMENT_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${PAYMENT_DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8085
+    ports:
+      - "8085:8085"
+    networks:
+      - rideshare-net
+
+  document-service:
+    build:
+      context: .
+      dockerfile: document-service/Dockerfile
+    image: covoiturage/document-service:local
+    container_name: document-service
+    depends_on:
+      - postgres_document
+      - eureka
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_document:5432/${DOCUMENT_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DOCUMENT_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DOCUMENT_DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8086
+    ports:
+      - "8086:8086"
+    networks:
+      - rideshare-net
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    image: covoiturage/user-service:local
+    container_name: user-service
+    depends_on:
+      - postgres_user
+      - eureka
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_user:5432/${USER_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${USER_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${USER_DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8087
+    ports:
+      - "8087:8087"
+    networks:
+      - rideshare-net
+
+  getwayservice:
+    build:
+      context: .
+      dockerfile: getwayservice/Dockerfile
+    image: covoiturage/getwayservice:local
+    container_name: getwayservice
+    depends_on:
+      - eureka
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+    ports:
+      - "8080:8080"
+    networks:
+      - rideshare-net
+
+  configservice:
+    build:
+      context: .
+      dockerfile: configservice/Dockerfile
+    image: covoiturage/configservice:local
+    container_name: configservice
+    depends_on:
+      - eureka
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8888
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=${CONFIG_GIT_URI}
+    ports:
+      - "8888:8888"
+    networks:
+      - rideshare-net
+
+volumes:
+  pgdata_ai:
+  pgdata_ride:
+  pgdata_booking:
+  pgdata_payment:
+  pgdata_user:
+  pgdata_document:
+
+networks:
+  rideshare-net:
+    driver: bridge

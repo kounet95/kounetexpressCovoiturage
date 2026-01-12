@@ -118,9 +118,9 @@ public class RideShareAIAgent {
                     for (int i = 0; i < Math.min(rides.size(), 3); i++) {
                         RideDTO ride = rides.get(i);
                         actions.add(QuickAction.builder()
-                                .label("📍 " + ride.getDriverName() + " - " + ride.getPricePerSeat() + "€")
+                                .label("📍 " + ride.driverName() + " - " + ride.pricePerSeat() + "€")
                                 .action("view_ride")
-                                .callbackData("view_ride:" + ride.getId())
+                                .callbackData("view_ride:" + ride.id())
                                 .build());
                     }
 
@@ -184,26 +184,26 @@ public class RideShareAIAgent {
         int count = 1;
         for (RideDTO ride : rides) {
             response.append("<b>").append(count++).append(". ")
-                    .append(ride.getDriverName()).append("</b> ⭐ ")
-                    .append(String.format("%.1f", ride.getDriverRating()))
+                    .append(ride.driverName()).append("</b> ⭐ ")
+                    .append(String.format("%.1f", ride.driverRating()))
                     .append("\n");
 
-            response.append("📍 ").append(ride.getDeparture())
-                    .append(" → ").append(ride.getDestination())
+            response.append("📍 ").append(ride.departure())
+                    .append(" → ").append(ride.destination())
                     .append("\n");
 
             response.append("🕐 Départ: ")
-                    .append(ride.getDepartureTime().toLocalDate())
+                    .append(ride.departureTime().toLocalDate())
                     .append(" à ")
-                    .append(ride.getDepartureTime().toLocalTime())
+                    .append(ride.departureTime().toLocalTime())
                     .append("\n");
 
-            response.append("💺 Places: ").append(ride.getAvailableSeats())
-                    .append(" • 💰 Prix: ").append(ride.getPricePerSeat())
+            response.append("💺 Places: ").append(ride.availableSeats())
+                    .append(" • 💰 Prix: ").append(ride.pricePerSeat())
                     .append("€\n");
 
-            if (ride.getVehicle() != null) {
-                response.append("🚙 ").append(ride.getVehicle()).append("\n");
+            if (ride.vehicle() != null) {
+                response.append("🚙 ").append(ride.vehicle()).append("\n");
             }
 
             response.append("\n");
