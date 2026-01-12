@@ -10,24 +10,29 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.0</version>
+		<version>3.3.5</version>
+		<relativePath/>
 	</parent>
 
 	<!-- Project Info -->
 	<groupId>com.covoiturage</groupId>
 	<artifactId>intelligent-rideshare</artifactId>
-	<version>1.0.0</version>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>intelligent-rideshare</name>
+	<description>intelligent-rideshare</description>
 	<packaging>pom</packaging>
 
 	<!-- Properties -->
 	<properties>
 		<java.version>21</java.version>
-		<spring-ai.version>1.0.0-M4</spring-ai.version>
-		<telegram.version>6.9.7</telegram.version>
+		<spring-ai.version>1.1.0-M4</spring-ai.version>
+		<spring-cloud.version>2023.0.4</spring-cloud.version>
+		<ojdbc.version>23.5.0.24.07</ojdbc.version>
 	</properties>
 
 	<!-- Modules -->
 	<modules>
+		<module>common</module>
 		<module>user-service</module>
 		<module>ride-service</module>
 		<module>booking-service</module>
@@ -35,12 +40,19 @@
 		<module>document-service</module>
 		<module>ai-agent-service</module>
 		<module>messaging-gateway</module>
-		<module>common</module>
 	</modules>
 
 	<!-- Dependency Management -->
 	<dependencyManagement>
 		<dependencies>
+			<!-- Spring Cloud BOM -->
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 
 			<!-- Spring AI BOM -->
 			<dependency>
@@ -51,6 +63,19 @@
 				<scope>import</scope>
 			</dependency>
 
+			<!-- MapStruct version management -->
+			<dependency>
+				<groupId>org.mapstruct</groupId>
+				<artifactId>mapstruct</artifactId>
+				<version>1.5.5.Final</version>
+			</dependency>
+
+			<!-- SpringDoc OpenAPI version management -->
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+				<version>2.8.4</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -82,19 +107,16 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-config</artifactId>
-			<version>4.1.0</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-			<version>4.0.3</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
-			<version>4.2.0</version>
 		</dependency>
 
 		<!-- Databases -->
@@ -108,7 +130,9 @@
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ojdbc11</artifactId>
+			<version>${ojdbc.version}</version>
 			<scope>runtime</scope>
+			<optional>true</optional>
 		</dependency>
 
 		<!-- Testcontainers -->
@@ -132,18 +156,6 @@
 <!--			<scope>runtime</scope>-->
 <!--		</dependency>-->
 
-		<!-- Telegram -->
-		<dependency>
-			<groupId>org.telegram</groupId>
-			<artifactId>telegrambots</artifactId>
-
-		</dependency>
-
-		<dependency>
-			<groupId>org.telegram</groupId>
-			<artifactId>telegrambots-spring-boot-starter</artifactId>
-			<version>6.9.7.1</version>
-		</dependency>
 
 		<!-- Spring AI -->
 		<dependency>
@@ -167,7 +179,8 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<optional>true</optional>
+			<version>1.18.32</version>
+			<scope>provided</scope>
 		</dependency>
 
 		<!-- Tests -->
@@ -190,9 +203,32 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.10.1</version>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>1.18.32</version>
+						</path>
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>1.5.5.Final</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
 			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<configuration>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+
 		</plugins>
 	</build>
 

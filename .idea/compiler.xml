@@ -28,7 +28,7 @@
       <module name="common.main" options="-parameters" />
       <module name="common.test" options="-parameters" />
       <module name="document-service" options="-parameters" />
-      <module name="intelligent-rideshare" options="" />
+      <module name="intelligent-rideshare" options="-parameters" />
       <module name="messaging-gateway" options="-parameters" />
       <module name="modulePrincipale" options="-parameters" />
       <module name="payment-service" options="-parameters" />
